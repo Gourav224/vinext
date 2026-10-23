@@ -234,6 +234,7 @@ import {
   type VisitedResponseCacheCandidateFacts,
 } from "./navigation-planner.js";
 import { hasServerActions, loadServerActionClient } from "virtual:vinext-app-capabilities";
+import { loadServerActionClientOrReload } from "./app-browser-action-client-loader.js";
 
 const HAS_CLIENT_REWRITES = process.env.__VINEXT_HAS_CLIENT_REWRITES !== "false";
 
@@ -1900,7 +1901,9 @@ function registerServerActionCallback(): void {
   setServerCallback((id, args) => {
     const releaseCacheInvalidationGuard = historyController.beginCacheInvalidationGuard();
     const actionInitiation = createActionInitiationSnapshot();
-    return loadServerActionClient!()
+    return loadServerActionClientOrReload(loadServerActionClient!, () =>
+      browserNavigationController.performHardNavigation(actionInitiation.href),
+    )
       .then(({ invokeClientServerAction }) =>
         invokeClientServerAction(id, args, actionInitiation, {
           basePath: __basePath,
