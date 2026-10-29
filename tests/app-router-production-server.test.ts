@@ -2468,7 +2468,7 @@ describe("App Router Production server (startProdServer)", () => {
     expect(resetRes.status).toBe(200);
 
     const errorRes = await fetch(`${baseUrl}/error-server-test`);
-    expect(errorRes.status).toBe(200);
+    expect(errorRes.status).toBe(500);
 
     await new Promise((resolve) => setTimeout(resolve, 200));
 

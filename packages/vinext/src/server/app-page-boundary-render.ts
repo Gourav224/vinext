@@ -1259,6 +1259,15 @@ export async function renderAppPageErrorBoundary<TModule extends AppPageModule>(
     });
   };
 
+  // The error rejected the document's shell before any byte was sent, so
+  // Next.js answers 500 whichever boundary catches it, error.tsx included
+  // (`renderToStream` in app-render.tsx). Only a streamed error, inside a
+  // Suspense boundary, keeps the 200 the first chunk already sent. A flight
+  // response for a local boundary keeps 200, as Next.js' dynamic flight render
+  // never changes its status.
+  // https://github.com/vercel/next.js/blob/v16.2.6/packages/next/src/server/app-render/app-render.tsx
+  const isServerErrorResponse = errorBoundary.isGlobalError || !options.isRscRequest;
+
   const renderWith = async (BoundaryComponent: AppPageComponent): Promise<Response> => {
     const response = await renderAppPageBoundaryElementResponse({
       ...options,
@@ -1268,9 +1277,9 @@ export async function renderAppPageErrorBoundary<TModule extends AppPageModule>(
       navigationParams: matchedParams,
       route: options.route,
       routePattern: options.route?.pattern,
-      status: errorBoundary.isGlobalError ? 500 : 200,
+      status: isServerErrorResponse ? 500 : 200,
     });
-    if (errorBoundary.isGlobalError) {
+    if (isServerErrorResponse) {
       applyCdnResponseHeaders(response.headers, { cacheControl: NEVER_CACHE_CONTROL });
     }
     return response;
